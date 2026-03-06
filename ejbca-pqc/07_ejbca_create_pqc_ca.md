@@ -1,10 +1,12 @@
 # Module 07: Create PQC Certificate Authorities in EJBCA
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## The Main Event
 
-This is why we're here. Everything we've built so far — the database, WildFly, EJBCA with its Management CA — was all scaffolding for this moment. We're going to create quantum-resistant Certificate Authorities **natively** inside EJBCA using the same design and identity from our OpenSSL lab.
+This is why we're here. Everything we've built so far — the database, WildFly, EJBCA® with its Management CA — was all scaffolding for this moment. We're going to create quantum-resistant Certificate Authorities **natively** inside EJBCA® using the same design and identity from our OpenSSL lab.
 
-After this module, you'll have ML-DSA-87 Root CA and ML-DSA-65 Intermediate CA managed entirely by EJBCA — with certificate lifecycle management, audit logging, and a web interface.
+After this module, you'll have ML-DSA-87 Root CA and ML-DSA-65 Intermediate CA managed entirely by EJBCA® — with certificate lifecycle management, audit logging, and a web interface.
 
 > **📋 Keyfactor Reference:** [Tutorial: Build a Post-Quantum Ready PKI](https://docs.keyfactor.com/ejbca/9.3.2/tutorial-build-a-post-quantum-ready-pki) — our approach follows Keyfactor's native crypto token creation pattern, adapted for CLI.
 
@@ -34,7 +36,7 @@ sudo bin/ejbca.sh cryptotoken generatekey --help
 
 ## Step 1: Create the Root CA Crypto Token
 
-A crypto token in EJBCA is a key container — it holds the cryptographic keys a CA uses for signing. We'll create a soft crypto token (software-based, keys stored in the database) with ML-DSA-87 as the signing algorithm.
+A crypto token in EJBCA® is a key container — it holds the cryptographic keys a CA uses for signing. We'll create a soft crypto token (software-based, keys stored in the database) with ML-DSA-87 as the signing algorithm.
 
 ```bash
 cd /opt/ejbca
@@ -93,11 +95,11 @@ sudo bin/ejbca.sh cryptotoken listkeys --token "SassyCorp Root CA Token"
 
 ## Step 2: Verify Certificate Profiles
 
-EJBCA uses certificate profiles to control what types of certificates a CA can issue and what algorithms are permitted. Before creating our PQC CAs, we need to verify that the built-in profiles allow ML-DSA algorithms.
+EJBCA® uses certificate profiles to control what types of certificates a CA can issue and what algorithms are permitted. Before creating our PQC CAs, we need to verify that the built-in profiles allow ML-DSA algorithms.
 
 ### About the Default Profiles
 
-EJBCA ships with built-in `ROOTCA` and `SUBCA` certificate profiles. In EJBCA CE, these default profiles are typically permissive — they allow all available key algorithms including ML-DSA. This means they should work out of the box for our PQC CA creation.
+EJBCA® ships with built-in `ROOTCA` and `SUBCA` certificate profiles. In EJBCA CE, these default profiles are typically permissive — they allow all available key algorithms including ML-DSA. This means they should work out of the box for our PQC CA creation.
 
 In production, you'd clone these defaults and create restricted profiles that only allow your chosen algorithms (e.g., only ML-DSA-87 for Root, only ML-DSA-65 for Intermediate). Keyfactor's [PQC tutorials](https://docs.keyfactor.com/ejbca/9.3.2/tutorial-build-a-post-quantum-ready-pki) walk through creating custom profiles with specific PQC algorithm restrictions — they clone `ROOTCA`, set **Available Key Algorithms** to their chosen PQC algorithm, and configure the signature algorithm explicitly.
 

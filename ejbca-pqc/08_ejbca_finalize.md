@@ -1,5 +1,7 @@
 # Module 08: Browser Setup, Verification & Reference
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## Almost There
 
 EJBCA is running, the Management CA is active, and your PQC CAs are created. This module handles the final steps: setting up browser access to the admin UI, verifying everything works end-to-end, and providing reference material for ongoing use.

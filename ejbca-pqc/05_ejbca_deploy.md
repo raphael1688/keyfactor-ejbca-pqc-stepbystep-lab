@@ -1,12 +1,14 @@
 # Module 05: Deploy EJBCA
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## Time to Get the Code
 
-This is where it all comes together. We're going to clone the EJBCA Community Edition source code from GitHub, configure all the properties files we discussed in Module 02, build the application, and deploy it to WildFly.
+This is where it all comes together. We're going to clone the EJBCA® Community Edition source code from GitHub, configure all the properties files we discussed in Module 02, build the application, and deploy it to WildFly.
 
 > **📋 Keyfactor Reference:** [Deploy EJBCA](https://docs.keyfactor.com/ejbca-software/latest/deploy-ejbca)
 
----
+<br>
 
 ## Step 1: Clone EJBCA Community Edition
 

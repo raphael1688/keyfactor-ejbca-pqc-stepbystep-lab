@@ -1,8 +1,10 @@
 # Module 09: Deployment Reference & Troubleshooting
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## Complete Reference Guide
 
-This module serves as your ongoing reference for the EJBCA deployment. Bookmark it. You'll come back to it when you need to remember a file path, a port number, or how to fix something.
+This module serves as your ongoing reference for the EJBCA® deployment. Bookmark it. You'll come back to it when you need to remember a file path, a port number, or how to fix something.
 
 > **📋 Keyfactor Reference:** [Deployment Reference](https://docs.keyfactor.com/ejbca-software/latest/deployment-reference) and [EJBCA Security](https://docs.keyfactor.com/ejbca/latest/ejbca-security)
 
@@ -14,7 +16,7 @@ This module serves as your ongoing reference for the EJBCA deployment. Bookmark 
 
 | Path | Contents |
 |------|----------|
-| `/opt/ejbca/` | EJBCA source code and build system |
+| `/opt/ejbca/` | EJBCA® source code and build system |
 | `/opt/ejbca/conf/` | Configuration properties files |
 | `/opt/ejbca/conf/install.properties` | Management CA configuration |
 | `/opt/ejbca/conf/cesecore.properties` | Core security settings |
@@ -264,7 +266,7 @@ source /etc/profile.d/ejbca.sh
 | Component | Username | Password | Purpose |
 |-----------|----------|----------|---------|
 | MariaDB root | `root` | (set in Module 03) | Database administration |
-| MariaDB EJBCA | `ejbca` | `ejbca` | EJBCA database access |
+| MariaDB EJBCA | `ejbca` | `ejbca` | EJBCA® database access |
 | SuperAdmin P12 | — | `ejbca` | Admin browser certificate |
 | TLS keystore | — | `serverpwd` | WildFly TLS |
 | Trust store | — | `changeit` | Java trust store |
@@ -455,29 +457,29 @@ Then re-import the new `superadmin.p12` into your browser.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Your Browser                            │
-│  SuperAdmin.p12 (client cert) ──────────────────────┐          │
+│  SuperAdmin.p12 (client cert) ──────────────────-────┐          │
 └──────────────────────────────────────────────────────┼──────────┘
                                                        │
                                                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Ubuntu 25.10 Server                           │
+│                    Ubuntu 25.10 Server                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │              WildFly 35.0.1.Final                         │  │
-│  │     Port 8080 (HTTP) │ 8442 (HTTPS) │ 8443 (Admin)       │  │
+│  │     Port 8080 (HTTP) │ 8442 (HTTPS) │ 8443 (Admin)        │  │
 │  │  ┌─────────────────────────────────────────────────────┐  │  │
 │  │  │            EJBCA Community Edition v9.3             │  │  │
 │  │  │                                                     │  │  │
-│  │  │  ┌──────────────┐ ┌────────────────────────────┐   │  │  │
-│  │  │  │ ManagementCA │ │ SassyCorp Root CA           │   │  │  │
-│  │  │  │ (RSA 3072)   │ │ (ML-DSA-87, native token)  │   │  │  │
-│  │  │  └──────────────┘ └──────────────┬─────────────┘   │  │  │
+│  │  │  ┌──────────────┐ ┌────────────────────────────┐    │  │  │
+│  │  │  │ ManagementCA │ │ SassyCorp Root CA          │    │  │  │
+│  │  │  │ (RSA 3072)   │ │ (ML-DSA-87, native token)  │    │  │  │
+│  │  │  └──────────────┘ └──────────────┬─────────────┘    │  │  │
 │  │  │                                  │                  │  │  │
-│  │  │                   ┌──────────────▼─────────────┐   │  │  │
-│  │  │                   │ SassyCorp Intermediate CA   │   │  │  │
-│  │  │                   │ (ML-DSA-65, native token)  │   │  │  │
-│  │  │                   └────────────────────────────┘   │  │  │
+│  │  │                   ┌──────────────▼─────────────┐    │  │  │
+│  │  │                   │ SassyCorp Intermediate CA  │.   │  │  │
+│  │  │                   │ (ML-DSA-65, native token)  │    │  │  │
+│  │  │                   └────────────────────────────┘    │  │  │
 │  │  └─────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                              │                                  │
@@ -490,7 +492,7 @@ Then re-import the new `superadmin.p12` into your browser.
 └─────────────────────────────────────────────────────────────────┘
 ```
 
----
+<br>
 
 ## What You've Accomplished
 
@@ -510,7 +512,7 @@ Your SassyCorp PKI now has:
 
 Not bad for a learning lab.
 
----
+<br>
 
 ## Next Steps (Beyond This Lab)
 
@@ -529,9 +531,9 @@ If you want to keep exploring, here are some things you can do with your EJBCA d
 
 | Resource | URL |
 |----------|-----|
-| EJBCA CE Source | https://github.com/Keyfactor/ejbca-ce |
-| EJBCA Documentation | https://docs.keyfactor.com/ejbca-software/latest/installation |
-| EJBCA Security Guide | https://docs.keyfactor.com/ejbca/latest/ejbca-security |
+| EJBCA® CE Source | https://github.com/Keyfactor/ejbca-ce |
+| EJBCA® Documentation | https://docs.keyfactor.com/ejbca-software/latest/installation |
+| EJBCA® Security Guide | https://docs.keyfactor.com/ejbca/latest/ejbca-security |
 | WildFly 35 Documentation | https://docs.wildfly.org/35/ |
 | MariaDB Documentation | https://mariadb.com/kb/en/documentation/ |
 | NIST FIPS 204 (ML-DSA) | https://csrc.nist.gov/pubs/fips/204/final |

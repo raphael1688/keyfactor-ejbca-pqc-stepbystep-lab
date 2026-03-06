@@ -1,34 +1,24 @@
-# Module 00: Building Enterprise PQC Certificate Authorities with EJBCA Community Edition
+# Module 00: Getting Started with EJBCA® Community Edition
+
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
 
 ## Introduction — From OpenSSL Knowledge to Enterprise PKI Management
 
-> **🎯 tl;dr - Our Goal:** Build enterprise-managed PQC Certificate Authorities in EJBCA, informed by everything we learned in the OpenSSL lab — same algorithms, same organizational identity, now with a PKI platform underneath.
+This is our second journy of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. In Part 1 we built a PQC CA hierarchy from scratch using OpenSSL and learned what every flag, every file, and every config directive actually does. Here, you take that knowledge and build the same CAs inside an modern PKI platform — because knowing `openssl ca` flags by heart is great at parties but doesn't scale.
 
-Let's do more post-quantum cryptography! In our [NIST FIPS PQC Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab/tree/main/fipsqs), we built a fully functional quantum-resistant Certificate Authority using OpenSSL 3.5.x — complete with an ML-DSA-87 Root CA, an ML-DSA-65 Intermediate CA, end-entity certificates, and revocation infrastructure. Fun stuff.
-
-Now comes a real-world question: **how do you manage that CA infrastructure at scale?**
-
-OpenSSL is an incredible tool for building and understanding PKI, but operating a production CA requires lifecycle management, role-based access control, audit logging, OCSP responders, CRL distribution, and management that doesn't involve memorizing `openssl ca` flags. That's where PKI management solutions like [EJBCA Community Edition](https://www.ejbca.org/) come in.
-
-This lab guide walks you through building **new, enterprise-grade PQC Certificate Authorities** natively inside **Keyfactor's EJBCA Community Edition v9.3** — an open-source, PKI management platform. Apply knowledge from the prior learnings in the OpenSSL lab (algorithm choices, key sizes, subject DNs, chain-of-trust design) to create a certificate authority with the same SassyCorp identity, now backed by a proper PQC PKI solution. 
-
-By the end, you'll have quantum-resistant Root and Intermediate CAs managed through EJBCA with certificate lifecycle management, audit logging, and a web-based admin interface — and you'll be more aligned to where we need to end up in order to start practicing cryptographic agility; crypto agility for the tech term marketing people. It's going to be a hotter topic as we ebb and flow with the quantum resistant crypto-secure future being mandated by pretty much everyone at this point. So suck up the marketing terms and let's dive in.
-
-<br>
-
-## Why Native Creation Instead of Import?
+## Why Native Creation?
 
 You might be wondering: "We already built PQC CAs in OpenSSL — why not just import those keys and certificates into EJBCA?"
 
 Great question. We tried. Here's what happens:
 
-EJBCA's `importca` command packages external CA keys and certificates into PKCS#12 keystores and imports them as soft crypto tokens. The problem is that the code path that creates the signer during import **assumes RSA keys**. When you hand it an ML-DSA key, it throws:
+The current `importca` command packages external CA keys and certificates into PKCS#12 keystores and imports them as soft crypto tokens. The problem is that the code path that creates the signer during import **assumes RSA keys**. When you hand it an ML-DSA key, it throws:
 
 ```
 OperatorCreationException: cannot create signer: Supplied key (BCMLDSAPrivateKey) is not a RSAPrivateKey instance
 ```
 
-This is an current limitation in EJBCA Community Edition — the `importca` signer code path casts to `RSAPrivateKey` internally. It's not a bug in the PQC algorithm support itself; EJBCA's Bouncy Castle provider handles ML-DSA just fine for **native** crypto token operations. The import path just hasn't been updated for non-RSA key types yet.
+This is an current limitation in EJBCA® Community Edition — the `importca` signer code path casts to `RSAPrivateKey` internally. It's not a bug in the PQC algorithm support itself; EJBCA's Bouncy Castle provider handles ML-DSA just fine for **native** crypto token operations. The import path just hasn't been updated for non-RSA key types yet. We'll let you know when this changes.
 
 All of Keyfactor's own PQC examples (including their [PQC Hybrid CA Tutorial](https://docs.keyfactor.com/ejbca/9.0/tutorial-create-pqc-hybrid-ca-chain)) use **native crypto token creation** inside EJBCA, never external import. So that's what we'll do too.
 
@@ -38,9 +28,9 @@ The good news: everything you learned in the OpenSSL lab directly informs how we
 
 <br>
 
-## What is EJBCA?
+## What is EJBCA®?
 
-EJBCA (Enterprise Java Beans Certificate Authority) is an open-source PKI platform developed by Keyfactor. It's one of the more widely deployed PKI platforms and solves for:
+EJBCA® (Enterprise Java Beans Certificate Authority) is an open-source PKI mangement platform developed by Keyfactor. It's one of the more widely deployed PKI platforms and solves for:
 
 - **Certificate Lifecycle Management** — issuance, renewal, revocation, and expiration tracking
 - **Protocol Support** — SCEP, CMP, EST, ACME, OCSP, and REST APIs
@@ -87,24 +77,20 @@ EJBCA uses three distinct ports, each with a different security model. Understan
 
 Port 8443 is where all the admin magic happens. When you navigate to `https://localhost:8443/ejbca/adminweb/`, WildFly demands your browser present a client certificate (the SuperAdmin cert we'll generate). If your browser doesn't have one, you get rejected. This is mutual TLS authentication — both sides prove their identity.
 
-> **⚠️ Important:** The `ant deploy-keystore` command (which we run during installation) creates the TLS keystores and a basic SSL context called `applicationSSC` — but it does **NOT** configure the 3-port Undertow/Elytron listener setup. That's a separate manual step we handle in Module 04. Without it, port 8442 won't exist and port 8443 won't require client certificates, which means Firefox will never prompt you for a certificate and you'll never reach the admin UI.
-
-<br>
-
 ## Prerequisites
 
 ### Completed Prior Lab
 
-You **must** have completed the [NIST FIPS PQC Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab/tree/main/fipsqs) before starting this guide. Specifically, you should have:
+You **really should** complete the [NIST FIPS PQC Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab/tree/main/fipsqs) before starting this guide. It provides the first steps to understanding how PQC certificate authorities operate at a granular level. Specifically we would end up with:
 
 - 🌈 An ML-DSA-87 Root CA with key and certificate at `/opt/sassycorp-pqc/root-ca/`
 - 🌈 An ML-DSA-65 Intermediate CA with key and certificate at `/opt/sassycorp-pqc/intermediate-ca/`
 - 🌈 A working certificate chain (Root → Intermediate → End Entity)
 - 🌈 OpenSSL 3.5.x with native PQC algorithm support
 
-If you don't have these, go back and complete the FIPS lab first. We'll wait. I'll grab some coffee. ☕ 
+You don't **HAVE** to do complete the first learning path but we do recommend it.  Grab some coffee, we'll wait. ☕ 
 
-*Note: I'm tired of AI ruining green checks so I'm using rainbows now. Bring it.*
+*Note: I'm tired of AI ruining green checks so I'm using rainbows and unicorns now. Bring it.*
 
 ### System Requirements
 
@@ -120,12 +106,12 @@ If you don't have these, go back and complete the FIPS lab first. We'll wait. I'
 
 | Software | Version | Purpose |
 |----------|---------|---------|
-| **OpenJDK** | 21 (21.0.5+) | Java runtime for EJBCA and WildFly |
+| **OpenJDK** | 21 (21.0.5+) | Java runtime for EJBCA® and WildFly |
 | **WildFly** | 35.0.1.Final | Jakarta EE application server |
 | **MariaDB** | Latest from Ubuntu repos | Database backend for EJBCA |
 | **Apache Ant** | 1.9.8+ | Build tool for EJBCA compilation and deployment |
 | **Git** | Latest from Ubuntu repos | Clone EJBCA CE source code |
-| **EJBCA CE** | 9.3 | The PKI platform itself |
+| **EJBCA® CE** | 9.3 | The PKI platform itself |
 
 ### Required Knowledge
 
@@ -197,13 +183,13 @@ You COULD copy/paste from this guide but you're only cheating yourself.
 
 ## What's Different from Keyfactor's Official Docs?
 
-Keyfactor's official documentation is plenty great, they have a lot of options — it's our reference throughout this lab. But we've adapted it for our specific use case:
+[Keyfactor's official documentation is plenty great](https://docs.keyfactor.com/ejbca-software/latest/installation), they have a lot of options — it's our reference throughout this lab. But we've adapted it for our specific use case:
 
 | Official Docs | Our Lab |
 |--------------|---------|
 | Generic CA setup | PQC CAs created natively using OpenSSL lab knowledge |
 | Multiple database options | MariaDB only (focused and clear) |
-| Multiple app servers | WildFly 35 only |
+| Multiple app server versions | WildFly 35 only |
 | Production-oriented | Learning-oriented with explanations |
 | RSA/ECDSA examples | Post-quantum (ML-DSA) throughout |
 
@@ -213,21 +199,21 @@ We follow the same order and structure as the official docs, but every step incl
 
 ## A Note on Post-Quantum Compatibility
 
-Here's something important: EJBCA uses Bouncy Castle as its cryptographic provider, and Bouncy Castle has been adding PQC algorithm support. EJBCA CE v9.3 includes Bouncy Castle libraries that support ML-DSA and other post-quantum algorithms.
+Here's something important: EJBCA® uses Bouncy Castle as its cryptographic provider, and Bouncy Castle has been adding PQC algorithm support. EJBCA CE v9.3 includes Bouncy Castle libraries that support ML-DSA and other post-quantum algorithms.
 
-When creating PQC CAs natively in EJBCA, there are a few things to be aware of:
+When creating PQC CAs natively in EJBCA®, there are a few things to be aware of:
 
-- **Bouncy Castle version conflicts** — WildFly ships its own Bouncy Castle, which can conflict with EJBCA's bundled version (we solve for this in Module 04)
+- **Bouncy Castle version conflicts** — WildFly ships its own Bouncy Castle, which can conflict with EJBCA's bundled version (Keyfactor's documentation and our lab solve for this in Module 04)
 - **Signing vs. encryption key pairs** — PQC signing keys (ML-DSA) work great, but EJBCA requires the encryption key pair to still be RSA (per Keyfactor's documentation)
-- **OCSP signing** — doesn't support PQC yet; must use RSA/EC for OCSP signing keys
+- **OCSP signing** — doesn't support PQC at this time; use RSA/EC for OCSP signing keys
 
-We'll address each of these in detail as we encounter them. For now, just be aware that PQC + EJBCA is bleeding edge territory and we'll be working through any compatibility considerations together. As the software revs, we'll keep updating this guide.
+We'll address each of these in detail as we encounter them. For now, just be aware that PQC + EJBCA is cutting edge territory and we'll be working through any compatibility considerations together. As the software revs, we'll keep updating this guide.
 
 <br>
 
 ## Enough already, let's Go
 
-Ready to build enterprise-grade, quantum-resistant Certificate Authorities?
+Ready to build a modern, quantum-resistant Certificate Authority?
 
 **Next Module:** [01 - Installation Prerequisites](01_ejbca_prerequisites.md)
 
@@ -237,8 +223,8 @@ Ready to build enterprise-grade, quantum-resistant Certificate Authorities?
 
 | Resource | URL |
 |----------|-----|
-| EJBCA Community Edition Source | https://github.com/Keyfactor/ejbca-ce |
-| EJBCA Software Stack Documentation | https://docs.keyfactor.com/ejbca-software/latest/installation |
+| EJBCA® Community Edition Source | https://github.com/Keyfactor/ejbca-ce |
+| EJBCA® Software Stack Documentation | https://docs.keyfactor.com/ejbca-software/latest/installation |
 | OpenSSL PQC Lab (Prior Lab) | https://github.com/f5devcentral/openssl-pqc-stepbystep-lab/tree/main/fipsqs |
 | WildFly 35 | https://www.wildfly.org/ |
 | OpenJDK 21 | https://openjdk.org/projects/jdk/21/ |
@@ -247,5 +233,3 @@ Ready to build enterprise-grade, quantum-resistant Certificate Authorities?
 | Keyfactor EJBCA PQC Hybrid Tutorial | https://docs.keyfactor.com/ejbca/9.0/tutorial-create-pqc-hybrid-ca-chain |
 
 ---
-
-*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*

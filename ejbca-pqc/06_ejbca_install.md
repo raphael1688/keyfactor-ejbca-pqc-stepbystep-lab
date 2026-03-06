@@ -1,8 +1,10 @@
 # Module 06: Install EJBCA Software Stack
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## What Happens During Installation?
 
-With EJBCA deployed and running in WildFly, we now need to *initialize* it as a Certificate Authority. This is where `ant runinstall` does its magic:
+With EJBCA® deployed and running in WildFly, we now need to *initialize* it as a Certificate Authority. This is where `ant runinstall` does its magic:
 
 1. **Creates the Management CA** — an internal RSA CA that signs admin certificates and the TLS server certificate
 2. **Generates the TLS keystore** — so EJBCA can serve HTTPS on port 8443

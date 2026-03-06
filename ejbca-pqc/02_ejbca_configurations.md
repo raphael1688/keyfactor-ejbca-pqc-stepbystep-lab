@@ -1,5 +1,7 @@
 # Module 02: EJBCA Configuration Management
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## Understanding EJBCA's Configuration System
 
 EJBCA keeps its configuration in a set of `.properties` files inside the `conf/` directory of the EJBCA source tree. Out of the box, these files are named `*.properties.sample` — you copy and rename them to `*.properties` to activate them.
@@ -8,7 +10,7 @@ This module explains each configuration file and what we'll set. We won't actual
 
 > **📋 Keyfactor Reference:** [Manage EJBCA Configurations](https://docs.keyfactor.com/ejbca-software/latest/manage-ejbca-configurations)
 
----
+<br>
 
 ## The Configuration Files
 
@@ -34,6 +36,8 @@ This file controls the initial Management CA that EJBCA creates during installat
 
 > **💡 Why RSA for the Management CA?** Great question. The Management CA is EJBCA's internal administrative CA — it handles TLS certificates for the web UI and admin authentication. We use RSA here because the web browsers and Java TLS stack connecting to EJBCA's admin interface need to trust these certificates, and browser support for ML-DSA in TLS is still emerging. Our *actual* PQC CAs (the SassyCorp Root and Intermediate) will be created natively in EJBCA in Module 07 using ML-DSA signing keys.
 
+<br>
+
 ### 2. cesecore.properties — Core Security Settings
 
 CESeCore is EJBCA's security core library. This file contains critical security configuration:
@@ -46,6 +50,8 @@ CESeCore is EJBCA's security core library. This file contains critical security 
 
 > **⚠️ Important:** The `password.encryption.key` should be set before initial installation and **never changed afterward**. Changing it after installation would make existing encrypted passwords unreadable. Use a strong random string.
 
+<br>
+
 ### 3. ejbca.properties — Application Settings
 
 Controls EJBCA's application behavior:
@@ -54,6 +60,8 @@ Controls EJBCA's application behavior:
 |----------|-----------|---------|
 | `appserver.home` | `/opt/wildfly` | Points to the WildFly installation |
 | `ejbca.productionmode` | `true` | Production mode (omits testing classes) |
+
+<br>
 
 ### 4. web.properties — Web Interface & Admin Settings
 
@@ -79,6 +87,8 @@ Configures the EJBCA web interface, TLS, and the initial super administrator:
 > - **8442** — HTTPS without client cert requirement (public HTTPS access)
 > - **8443** — HTTPS with client certificate authentication (admin UI — this is where you manage everything)
 
+<br>
+
 ### 5. database.properties — Database Connection
 
 Tells EJBCA how to connect to the database:
@@ -90,7 +100,7 @@ Tells EJBCA how to connect to the database:
 
 > **💡 Why `mysql` for MariaDB?** MariaDB is a drop-in replacement for MySQL and uses the same protocol. EJBCA's `database.name=mysql` works perfectly with MariaDB. The JDBC driver handles the rest.
 
----
+<br>
 
 ## Configuration Strategy
 
@@ -103,7 +113,7 @@ Here's how the configuration workflow fits into our lab:
 
 The actual file edits happen in Module 05. This module is your reference guide so you understand what each property does when you get there.
 
----
+<br>
 
 ## Configuration File Location Map
 
@@ -121,7 +131,7 @@ After cloning EJBCA (Module 05), the configuration files will be at:
 └── ... (other optional configs)
 ```
 
----
+<br>
 
 ## Security Considerations for Lab vs. Production
 

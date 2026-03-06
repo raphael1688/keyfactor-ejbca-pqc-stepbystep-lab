@@ -1,8 +1,10 @@
 # Module 01: Installation Prerequisites
 
-Before EJBCA can run, it needs a foundation. EJBCA is a Java application that runs inside an application server (WildFly), stores its data in database (MariaDB), and is compiled from source using Apache Ant. Each of these has its own dependencies.
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
 
-This module installs everything EJBCA needs to compile, deploy, and run — except for EJBCA itself, the database, and the application server, which each get their own modules. We provide all the instructions but you can check it out on Keyfactor's web site if you want.
+Before EJBCA® can run, it needs a foundation. EJBCA is a Java application that runs inside an application server (WildFly), stores its data in database (MariaDB), and is compiled from source using Apache Ant. Each of these has its own dependencies.
+
+This module installs everything EJBCA® needs to compile, deploy, and run — except for EJBCA itself, the database, and the application server, which each get their own modules. We provide all the instructions but you can check it out on Keyfactor's web site if you want.
 
 > **📋 Keyfactor Reference:** [Installation Prerequisites](https://docs.keyfactor.com/ejbca-software/latest/installation-prerequisites)
 
@@ -20,7 +22,7 @@ sudo apt update && sudo apt upgrade -y
 
 ## Step 2: Install System Dependencies
 
-EJBCA and its supporting tools need several system packages, most of these we have but we're being safe in case you're using your own linux flavor:
+EJBCA® and its supporting tools need several system packages, most of these we have but we're being safe in case you're using your own linux flavor:
 
 ```bash
 sudo apt install -y \
@@ -42,7 +44,7 @@ sudo apt install -y \
 
 ## Step 3: Install OpenJDK 21
 
-EJBCA requires Java 21 (specifically version 21.0.5 or later). OpenJDK 21 is the recommended JDK per Keyfactor's documentation (I did try openjdk-26-jdk and it seemed fine but let's not start playing variable scrabble).
+EJBCA® requires Java 21 (specifically version 21.0.5 or later). OpenJDK 21 is the recommended JDK per Keyfactor's documentation (I did try openjdk-26-jdk and it seemed fine but let's not start playing variable scrabble).
 
 ### Install from Ubuntu Repositories
 
@@ -67,7 +69,7 @@ The critical part is that it shows version **21.0.5 or later**.
 
 ### Set JAVA_HOME
 
-EJBCA and its build tools need the `JAVA_HOME` environment variable. Let's set it permanently:
+EJBCA® and its build tools need the `JAVA_HOME` environment variable. Let's set it permanently:
 
 ```bash
 echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-'$(dpkg --print-architecture) | sudo tee /etc/profile.d/java.sh
@@ -110,7 +112,7 @@ javac -version
 javac 21.0.x
 ```
 
----
+<br>
 
 ## Step 4: Install Apache Ant
 
@@ -174,16 +176,17 @@ openssl x509 -in /opt/sassycorp-pqc/intermediate-ca/certs/intermediate-ca.crt -n
 ### Verify ML-DSA-65 Signature
 
 ```bash
-openssl x509 -in /opt/sassycorp-pqc/intermediate-ca/certs/intermediate-ca.crt -noout -text | grep "Signature Algorithm"
+openssl x509 -in /opt/sassycorp-pqc/intermediate-ca/certs/intermediate-ca.crt -noout -text | grep "Algorithm"
 ```
 
 **Expected Output:**
 ```
-    Signature Algorithm: ML-DSA-65
-        Signature Algorithm: ML-DSA-87
+    Signature Algorithm: ML-DSA-87
+        Public Key Algorithm: ML-DSA-65
+    ...
 ```
 
-Note: The first line is the Intermediate CA's own algorithm (ML-DSA-65). The second is the algorithm the Root CA used to sign it (ML-DSA-87). This is expected.
+Note: The second line is the Intermediate CA's own algorithm (ML-DSA-65). The first is the algorithm the Root CA used to sign it (ML-DSA-87). This is expected.
 
 ### Check Private Keys Exist
 
@@ -227,7 +230,7 @@ sudo mkdir -p /opt/ejbca
 | `/opt/wildfly` | WildFly application server (created as symlink in Module 04) |
 | `/opt/sassycorp-pqc/` | Existing PQC CA infrastructure from prior lab (reference) |
 
----
+<br>
 
 ## Checkpoint
 

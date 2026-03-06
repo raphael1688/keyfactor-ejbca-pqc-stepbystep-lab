@@ -1,5 +1,7 @@
 # Module 03: Database Setup — MariaDB
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## Why a Database?
 
 EJBCA stores everything in a relational database: CA configurations, certificate data, audit logs, user accounts, certificate profiles, CRLs, and more. While EJBCA bundles an embedded database for quick demos, any serious deployment uses an external database.
@@ -8,7 +10,7 @@ We're using MariaDB because it's recommended by Keyfactor, it's free, it's well-
 
 > **📋 Keyfactor Reference:** [Create the Database](https://docs.keyfactor.com/ejbca-software/latest/create-the-database)
 
----
+<br>
 
 ## Step 1: Install MariaDB
 
@@ -47,7 +49,7 @@ mariadb --version
 mariadb from 11.8.3-MariaDB, client 15.2 for debian-linux-gnu ...
 ```
 
----
+<br>
 
 ## Step 2: Secure the MariaDB Installation
 
@@ -71,7 +73,7 @@ This interactive script will ask you several questions. Here's how to answer the
 
 > **💡 Remember Your Root Password:** You'll need the MariaDB root password in the next step to create the EJBCA database and user.
 
----
+<br>
 
 ## Step 3: Create the EJBCA Database
 
@@ -96,7 +98,7 @@ CREATE DATABASE ejbca CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 > **⚠️ Character Set Note:** We use `utf8mb4` (full 4-byte UTF-8) which is the modern best practice. In rare cases, you may hit a `Specified key was too long; max key length is 767 bytes` error during EJBCA deployment. If that happens, see the Troubleshooting section at the end of this module for the `utf8` fallback.
 
----
+<br>
 
 ## Step 4: Create the EJBCA Database User
 
@@ -122,7 +124,7 @@ FLUSH PRIVILEGES;
 
 > **⚠️ Lab vs. Production:** We're using `ejbca` as both the username and password for simplicity in this learning lab. In production, use a strong, randomly generated password and store it securely. You should also restrict table-level privileges — see Keyfactor's [Database Privileges](https://docs.keyfactor.com/ejbca/latest/ejbca-security) documentation.
 
----
+<br>
 
 ## Step 5: Verify the Database and User
 
@@ -166,7 +168,7 @@ Exit the MariaDB shell:
 EXIT;
 ```
 
----
+<br>
 
 ## Step 6: Test the EJBCA User Connection
 
@@ -202,7 +204,7 @@ This confirms the `ejbca@127.0.0.1` user works over TCP — which is how WildFly
 
 > **💡 Why both?** If only the `localhost` user exists, the EJBCA CLI tools (which use the socket) will work fine, but WildFly's JDBC datasource (which uses TCP to `127.0.0.1`) will get `Access denied`. Testing both now saves a frustrating debugging session in Module 04.
 
----
+<br>
 
 ## Step 7: Verify Binary Log Format
 
@@ -253,7 +255,7 @@ EJBCA includes SQL scripts for creating recommended database indexes. These impr
 
 We'll apply these after EJBCA is deployed in Module 05. For now, the database structure is ready.
 
----
+<br>
 
 ## Database Architecture Summary
 
@@ -277,7 +279,7 @@ Here's what we just built:
 └─────────────────────────────────┘
 ```
 
----
+<br>
 
 ## Troubleshooting
 
@@ -312,10 +314,8 @@ sudo mariadb -u root -p -e "GRANT ALL PRIVILEGES ON ejbca.* TO 'ejbca'@'localhos
 
 Then re-run the EJBCA deployment from Module 05.
 
----
+<br>
 
 **Next Module:** [04 - WildFly 35 Setup](04_ejbca_wildfly.md)
-
----
 
 *[← Previous: Module 02 - Configurations](02_ejbca_configurations.md) | [Next: Module 04 - WildFly →](04_ejbca_wildfly.md)*

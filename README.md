@@ -1,26 +1,34 @@
-# EJBCA Post-Quantum Cryptography Lab
+# EJBCA® Post-Quantum Cryptography Lab
 
-Build quantum-resistant Certificate Authorities using **EJBCA Community Edition v9.3** and **NIST FIPS 204 ML-DSA** algorithms. By hand. Every command. No scripts, no Docker Compose, no "just run this one-liner." WE'RE going to learn this stuff whether we like it or not.
+> **🎯 tl;dr - Our Goal:** Build a managed PQC Certificate Authorities in EJBCA®, informed by everything we learned in the OpenSSL lab — same algorithms, same organizational identity, now with a modern PKI platform underneath.
 
-This is our second journy of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. In Part 1 we built a PQC CA hierarchy from scratch using OpenSSL and learned what every flag, every file, and every config directive actually does. Here, you take that knowledge and build the same CAs inside an enterprise PKI platform — because knowing `openssl ca` flags by heart is great at parties but doesn't scale.
+Let's do more post-quantum cryptography! In our [NIST FIPS PQC Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab/tree/main/fipsqs), we built a fully functional quantum-resistant Certificate Authority using OpenSSL 3.5.x — complete with an ML-DSA-87 Root CA, an ML-DSA-65 Intermediate CA, end-entity certificates, and revocation infrastructure. Fun stuff.
+
+Now comes a real-world question: **how do you manage that CA infrastructure at scale?**
+
+OpenSSL is an incredible tool for building and understanding PKI, but operating a production CA requires lifecycle management, role-based access control, audit logging, OCSP responders, CRL distribution, and management that doesn't involve memorizing `openssl ca` flags. That's where PKI management solutions like [EJBCA® Community Edition](https://www.ejbca.org/) enter our learning path.
+
+This lab guide walks you through building **new, enterprise style PQC Certificate Authorities** natively inside **Keyfactor's EJBCA® Community Edition v9.3** — an open-source, PKI management platform. Apply knowledge from the prior learnings in the OpenSSL lab (algorithm choices, key sizes, subject DNs, chain-of-trust design) to create a certificate authority with the same SassyCorp identity, now backed by a proper PQC PKI solution. 
+
+By the end, you'll have quantum-resistant Root and Intermediate CAs managed through EJBCA® with certificate lifecycle management, audit logging, and a web-based admin interface — and you'll be more aligned to where we need to end up in order to start practicing cryptographic agility at scale; crypto agility for the marketing people. It's going to be a hotter topic as we ebb and flow with the quantum resistant crypto-secure future being mandated by pretty much everyone at this point. So suck up the marketing terms and let's dive in.
 
 ## What You'll Build
 
 An entire PKI stack from the ground up:
 
-- **MariaDB** database backend with proper character sets, binary log format, and both socket and TCP connectivity (because WildFly uses TCP and this will bite you exactly once before you learn why)
-- **WildFly 35.0.1.Final** application server with 3-port TLS separation, Elytron security configuration, credential stores, and a JDBC datasource — all configured through JBoss CLI commands
-- **EJBCA Community Edition v9.3** compiled from source with Apache Ant, deployed as an EAR, initialized with a Management CA, and serving a mutual TLS admin interface
-- **ML-DSA-87 Root CA** created natively inside EJBCA's crypto token framework — quantum-resistant, NIST FIPS 204 compliant, same SassyCorp identity from the OpenSSL lab
-- **ML-DSA-65 Intermediate CA** signed by the Root CA, completing a post-quantum chain of trust that you can verify with OpenSSL on the command line
+- 🌈 **MariaDB** database backend with proper character sets, binary log format, and both socket and TCP -connectivity (because WildFly uses TCP and this will bite you exactly once before you learn why)
+- 🌈 **WildFly 35.0.1.Final** application server with 3-port TLS separation, Elytron security configuration, credential stores, and a JDBC datasource — all configured through JBoss CLI commands
+- 🌈 **EJBCA® Community Edition v9.3** compiled from source with Apache Ant, deployed as an EAR, initialized with a Management CA, and serving a mutual TLS admin interface
+- 🌈 **ML-DSA-87 Root CA** created natively inside EJBCA's crypto token framework — quantum-resistant, NIST FIPS 204 compliant, same SassyCorp identity from the OpenSSL lab
+- 🌈 **ML-DSA-65 Intermediate CA** signed by the Root CA, completing a post-quantum chain of trust that you can verify with OpenSSL on the command line
 
 When you're done, you'll have a web-based admin UI, certificate lifecycle management, audit logging, OCSP, CRL distribution, and a REST API — all backed by post-quantum cryptography. Disco.
 
-## Why This Matters (The Short Version)
+## Why This Matters (The Short and Sassy Version)
 
-RSA and ECC have an expiration date. We don't know exactly when, but NIST has already finalized the replacements and everyone from the NSA, CCCS, to the BSI is publishing migration timelines. The transition is happening.
+RSA and ECC have an "expiration" date. We don't know exactly when, but NIST has already finalized the replacements and everyone from the NSA, CCCS, to the BSI is publishing migration timelines. The transition is happening.
 
-The problem is that reading about PQC migration and actually doing it are two completely different things. There's a gap between "I understand lattice-based cryptography conceptually" and "I can stand up a CA that signs certificates with ML-DSA-87 and I know which Bouncy Castle jar is going to ruin my afternoon." This lab closes that gap.
+The problem is that reading about PQC migration and actually doing it are two completely different things. There's a gap between "I understand lattice-based cryptography conceptually" and "I can stand up a CA that signs certificates with ML-DSA-87 and I know which Bouncy Castle library is going to ruin my afternoon." This lab closes that gap.
 
 By the end, you'll have hands-on experience with the exact workflow organizations will need to follow: create crypto tokens with PQC key pairs, initialize certificate authorities with quantum-resistant signing algorithms, build a chain of trust, and manage it all through an enterprise platform. When someone in your organization asks "can we actually do this?" you'll be the one who already has.
 
@@ -30,30 +38,16 @@ ML-DSA (Module-Lattice-Based Digital Signature Algorithm) is the NIST-standardiz
 
 | Parameter Set | Security Level | What We Use It For |
 |---------------|---------------|---------------------|
-| **ML-DSA-44** | NIST Level 2 | Not used in this lab |
 | **ML-DSA-65** | NIST Level 3 | Intermediate CA signing key |
 | **ML-DSA-87** | NIST Level 5 | Root CA signing key |
 
 ML-DSA-87 for the root (maximum security for the trust anchor), ML-DSA-65 for the intermediate (strong security, better performance for day-to-day signing). Same choices we made in the OpenSSL lab, now running inside PKI platform infrastructure.
 
-## Things You'll Learn the Hard Way
-
-This lab was tested, broken, fixed, retested, broken differently, and fixed again through many iterations. Here are some things we discovered so you don't have to:
-
-- **EJBCA's `importca` can't handle ML-DSA keys yet.** The signer code path assumes RSA. We tried. It threw `BCMLDSAPrivateKey is not a RSAPrivateKey instance`. So we create natively instead. Every Keyfactor PQC example does it this way too.
-- **WildFly ships its own Bouncy Castle** inside RESTEasy-Crypto. If you don't remove it, WildFly loads the old Bouncy Castle instead of EJBCA's PQC-capable version and you get cryptographic errors that are deeply unhelpful. Keyfactor notes this in their install.
-- **`ant deploy-keystore` creates PKCS#12 files, not JKS.** If your Elytron key-store config says `type=JKS` or points to `.jks` files, nothing works. Ask me how many times we got this wrong.
-- **WildFly's `launch.sh` uses `#!/bin/sh` but contains bash syntax.** On Ubuntu, `/bin/sh` is dash. The service starts, does nothing, exits silently. No error, no log. Just vibes.
-- **The 3-port TLS setup is a manual step.** `ant deploy-keystore` creates keystores but does NOT configure Undertow listeners or Elytron SSL contexts. Without Module 04's configuration, port 8442 doesn't exist and port 8443 doesn't require client certificates. Your browser will never prompt you and you'll stare at a blank page wondering what you did wrong.
-- **`/etc/sysconfig/` doesn't exist on Ubuntu** by default. WildFly's systemd service expects its config file there. If the directory is missing, WildFly starts with no variables set and immediately exits. Again, silently.
-
-Every one of these is documented in the modules with explanations and fixes. You're welcome.
-
 ## Creating PQC Certificates for Your Environment
 
-Once the lab is built, you have a fully operational PQC certificate authority. The Intermediate CA can sign end-entity certificates through EJBCA's enrollment interface, REST API, or CLI. Want to issue a quantum secure server certificate? Create a certificate profile, set the signature algorithm, and enroll. Want to test your application's PQC certificate handling? Issue certificates and export them. The infrastructure is there — the hard part is building it.
+Once the lab is built, you have a fully operational PQC certificate authority. The Intermediate CA can sign end-entity certificates through EJBCA's enrollment interface, REST API, or CLI. Want to issue a quantum secure server certificate? Create a certificate profile, set the signature algorithm, and enroll. Want to test your application's PQC certificate handling? Issue certificates and export them. The infrastructure is there — the busy part is building it.
 
-EJBCA also supports hybrid certificates that combine PQC and traditional algorithms, which is useful for environments that need to maintain backward compatibility during migration. The platform handles certificate lifecycle management, so you get renewal, revocation, CRL generation, and OCSP without managing flat files and serial numbers by hand like we did in the OpenSSL lab.
+
 
 ## Lab Modules
 
@@ -77,6 +71,8 @@ You should seriously complete [Part 1 — the OpenSSL PQC Lab](https://github.co
 ## Get Started
 
 **[Start with Module 00 -->](/ejbca-pqc/00_ejbca_migration_intro.md)**
+
+<br>
 
 ## References
 

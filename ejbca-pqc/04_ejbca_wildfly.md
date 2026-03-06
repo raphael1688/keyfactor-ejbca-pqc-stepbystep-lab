@@ -1,5 +1,7 @@
 # Module 04: WildFly 35 Application Server Setup
 
+*This lab is part of the [Post-Quantum Cryptography Step-by-Step Lab](https://github.com/f5devcentral/openssl-pqc-stepbystep-lab) series. For educational and internal testing purposes. Production deployments should use HSMs, air-gapped Root CAs, and follow organizational security policies.*
+
 ## What is WildFly and Why Do We Need It?
 
 WildFly (formerly JBoss Application Server) is a [Jakarta EE](https://jakarta.ee/about/jakarta-ee/) application server. Think of it as the runtime environment that hosts and runs EJBCA — similar to how Apache or Nginx hosts web applications, but for Java enterprise applications.
@@ -435,7 +437,6 @@ sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/interface=httpspriv:ad
 ```
 
 Bind ports to those interfaces:
-
 ```bash
 sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/socket-binding-group=standard-sockets/socket-binding=http:add(port="8080",interface="http")'
 sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/socket-binding-group=standard-sockets/socket-binding=httpspub:add(port="8442",interface="httpspub")'
@@ -443,6 +444,27 @@ sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/socket-binding-group=s
 ```
 
 > **💡 What `0.0.0.0` means:** Binding to all interfaces. In production, you'd bind to specific IPs. For our lab this is fine.
+
+Reload and verify before continuing. The SSL contexts and Undertow listeners in the next steps reference these interfaces and socket-bindings by name — if they haven't been committed to `standalone.xml` first, the later commands will silently succeed but the listeners won't actually persist:
+```bash
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect ':reload'
+```
+```bash
+sleep 10 && sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect ':read-attribute(name=server-state)'
+```
+
+**Expected:** `"running"`
+
+Confirm all three interfaces are present:
+```bash
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/interface=http:read-resource'
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/interface=httpspub:read-resource'
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/interface=httpspriv:read-resource'
+```
+
+Each should return `{"outcome" => "success"}`. If any return "not found," re-run the interface `add` commands above before proceeding.
+
+> **⚠️ Do not skip this reload.** This is the most common failure point in Module 04. WildFly CLI commands can return success without error output even when the resource doesn't fully commit until a reload. If you proceed to Step 12c without confirming these interfaces exist, the Undertow listeners in Step 12d will reference socket-bindings that don't exist, and ports 8080/8442/8443 will be missing after the final reload with no obvious error message explaining why.
 
 ### 12c: Configure TLS Keystores and SSL Contexts
 
@@ -689,13 +711,18 @@ sleep 10 && sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect ':read-attri
 
 ### Port 8442 not listening after Step 12
 
-Check that the httpspub listener was created correctly:
-
+First, check whether the interfaces themselves survived — this is the most common root cause:
 ```bash
-sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/subsystem=undertow/server=default-server/https-listener=httpspub:read-resource'
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/subsystem=undertow/server=default-server:read-resource(recursive=true)'
 ```
 
-If it returns "not found," re-run the Step 12 commands starting from 12c (ssl-contexts) and 12d (listeners).
+If the `http`, `httpspub`, or `httpspriv` listeners are missing, also check whether the interfaces and socket-bindings exist:
+```bash
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/interface=http:read-resource'
+sudo -u wildfly /opt/wildfly/bin/jboss-cli.sh --connect '/socket-binding-group=standard-sockets/socket-binding=httpspub:read-resource'
+```
+
+If those return "not found," the Step 12b commands didn't persist — likely because the reload after 12b was skipped. Re-run Step 12b in full, reload and verify the interfaces exist, then re-run Steps 12c and 12d in sequence with a reload between each group.
 
 ### Port 8443 not requiring client certificate
 
